@@ -1,0 +1,154 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# misp_health
+#
+# Plugin to monitor the health of your MISP instance.
+#
+# Author: Steve Clement <steve@localhost.lu>
+#
+# v1.0 11-15-2019 - First draft
+#
+# Usage: place in /etc/munin/plugins/ (or link it there using ln -s)
+#
+# Parameters understood:
+#
+#       config   (required)
+#       autoconf (optional - used by munin-config)
+#
+# Magic markers - optional - used by installation scripts and
+# munin-config:
+#
+#  #%# capabilities=autoconf
+#  #%# family=contrib
+
+import os
+import sys
+import warnings
+from secrets.keys import misp_client_cert, misp_key, misp_url, misp_verifycert
+
+try:
+    from pymisp import ExpandedPyMISP
+except ImportError:
+    print("The module 'pymisp' is currently not installed.  You can install it by typing:\n"
+          "sudo pip3 install pymisp\nImportError: No module named pymisp")
+    sys.exit(1)
+
+
+relative_path = 'servers/serverSettings/diagnostics'
+
+body = None
+
+###########################################################
+title = 'Health of instance: ' + misp_url
+vlabel = 'Total issues'
+other = 'other'
+total = 'total'
+
+diagnosticsAvailable = ['database', 'workersCache', 'workersDefault', 'workersEmail', 'workersPrio', 'workersUpdate', 'workersScheduler', 'version', 'zmq', 'gpg', 'moduleEnrichment', 'moduleExport', 'moduleImport', 'mispLive']
+
+colour = ['ff0000', '22ff22', '0022ff', '00aaaa', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff', 'ff00ff']
+
+critical = 1
+###########################################################
+
+warnings.filterwarnings('ignore', 'apt API not stable yet', FutureWarning)
+
+
+def autoconf():
+    if os.path.exists('/etc/lsb-release'):
+        for line in open('/etc/lsb-release'):
+            if line.strip() == 'DISTRIB_ID=Ubuntu':
+                try:
+                    import apt
+                except ImportError:
+                    print('no (python-apt not installed)')
+                    sys.exit(0)
+                cache = apt.Cache()
+                if 'update-notifier-common' not in cache:
+                    print('no (update-notifier-common not found)')
+                    sys.exit(0)
+                if not cache['update-notifier-common'].isInstalled:
+                    print('no (update-notifier-common not installed)')
+                    sys.exit(0)
+                if not os.path.exists('/etc/apt/apt.conf.d/10periodic'):
+                    print('no (/etc/apt/apt.conf.d/10periodic not found)')
+                    sys.exit(1)
+                for line in open('/etc/apt/apt.conf.d/10periodic'):
+                    if line.strip() == 'APT::Periodic::Update-Package-Lists "1";':
+                        print('yes')
+                        sys.exit(0)
+                print('no (APT::Periodic::Update-Package-Lists not "1")')
+                sys.exit(0)
+    print('no (missing /etc/lsb-release file)')
+    sys.exit(0)
+
+
+def config():
+    print('graph_category misp')
+    print('graph_title %s' % (title))
+    print('graph_vlabel %s' % (vlabel))
+    for i, diagnostic in enumerate(diagnosticsAvailable + [other]):
+        if len(colour) > i:
+            print('%s.colour %s' % (diagnostic, colour[i]))
+        if i < critical:
+            print('%s.critical 0:0' % (diagnostic))
+        if i == 0:
+            print('%s.draw AREA' % (diagnostic))
+        else:
+            print('%s.draw STACK' % (diagnostic))
+        print('%s.label %s' % (diagnostic, diagnostic))
+        if i + 1 > critical:
+            print('%s.warning 0:0' % (diagnostic))
+    print('total.colour 000000')
+    print('total.draw LINE1')
+    print('total.label %s' % (total))
+    sys.exit(0)
+
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'autoconf':
+        autoconf()
+    elif sys.argv[1] == 'config':
+        config()
+    elif sys.argv[1]:
+        print('unknown argument "' + sys.argv[1] + '"')
+        sys.exit(1)
+
+misp = ExpandedPyMISP(misp_url, misp_key, misp_verifycert)
+result = misp.direct_call(relative_path, body)
+
+diagnostics = {}
+diagnostics['version'] = 0 if result['version']['upToDate'] == "same" else 1
+diagnostics['database'] = 0 if len(result['dbSchemaDiagnostics']['diagnostic']) == 0 else len(result['dbSchemaDiagnostics']['diagnostic'])
+
+diagnostics['gpg'] = 0 if result['gpgStatus'] == "OK" else 1
+diagnostics['zmq'] = 0 if result['zmqStatus'] == 0 else 1
+
+diagnostics['moduleEnrichment'] = 0 if result['moduleStatus']['Enrichment'] == 0 else 1
+diagnostics['moduleImport'] = 0 if result['moduleStatus']['Import'] == 0 else 1
+diagnostics['moduleExport'] = 0 if result['moduleStatus']['Export'] == 0 else 1
+
+diagnostics['workersCache'] = 0 if result['workers']['cache']['ok'] is True else 1
+diagnostics['workersDefault'] = 0 if result['workers']['default']['ok'] is True else 1
+diagnostics['workersEmail'] = 0 if result['workers']['email']['ok'] is True else 1
+diagnostics['workersPrio'] = 0 if result['workers']['prio']['ok'] is True else 1
+diagnostics['workersUpdate'] = 0 if result['workers']['update']['ok'] is True else 1
+diagnostics['workersScheduler'] = 0 if result['workers']['scheduler']['ok'] is True else 1
+diagnostics['mispLive'] = 0
+diagnostics['redis'] = 0 if result['redisInfo']['connection'] is True else 1
+
+
+# errors = { 'database': 0 }
+
+total = 0
+# Looop or similar to populate error foo
+# total += 1
+
+for diagnostic in diagnosticsAvailable:
+     print('%s.value %s' % (diagnostic, diagnostics[diagnostic]))
+     total += diagnostics[diagnostic]
+#    print('%s.value %s' % (diagnostic, issues.pop(diagnostic, 0)))
+#    print(diagnostic)
+
+print('total.value %s' % (total))
