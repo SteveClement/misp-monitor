@@ -42,7 +42,6 @@ body = None
 ###########################################################
 title = 'Health of instance: ' + misp_url
 vlabel = 'Total issues'
-other = 'other'
 total = 'total'
 
 diagnosticsAvailable = ['database:ff0000',
@@ -80,7 +79,7 @@ def config():
     print('graph_category misp')
     print('graph_title %s' % (title))
     print('graph_vlabel %s' % (vlabel))
-    for i, diagnostic in enumerate(diagnosticsAvailable + [other]):
+    for i, diagnostic in enumerate(diagnosticsAvailable):
         if len(diagnosticsAvailable) > i:
             print('%s.colour %s' % (diagnostic.split(':')[0], diagnostic.split(':')[1]))
         if i < critical:
@@ -144,5 +143,4 @@ for diagnostic in diagnosticsAvailable:
 #    print('%s.value %s' % (diagnostic, issues.pop(diagnostic, 0)))
 #    print(diagnostic)
 
-print('other.value 0')
 print('total.value %s' % (total))

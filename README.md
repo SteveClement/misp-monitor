@@ -15,3 +15,11 @@ cp secrets/keys.py.sample secrets/keys.py
 # Change the URL and API Key
 ./test.py
 ```
+
+## Installing MISP Munin plugin
+
+```
+sudo cp munin/misp_health /etc/munin/plugins/
+# configure secrets/keys.py for the target misp instance
+sudo cp -r secrets /etc/munin/plugins/
+```
