@@ -25,7 +25,7 @@
 import os
 import sys
 import warnings
-from secrets.keys import misp_client_cert, misp_key, misp_url, misp_verifycert
+from secrets.keys import misps
 
 try:
     from pymisp import ExpandedPyMISP
@@ -37,7 +37,15 @@ except ImportError:
 
 relative_path = 'servers/serverSettings/diagnostics'
 
-body = None
+if len(misps) > 1:
+    # Multiple instances configured
+    misp_url = str(misps[0].split('|')[0])
+    misp_key = str(misps[0].split('|')[1])
+    misp_verifycert = str(misps[0].split('|')[2])
+else:
+    misp_url = str(misps[0].split('|')[0])
+    misp_key = str(misps[0].split('|')[1])
+    misp_verifycert = str(misps[0].split('|')[2])
 
 ###########################################################
 title = 'Health of instance: ' + misp_url
