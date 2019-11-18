@@ -23,22 +23,23 @@
 #  #%# capabilities=autoconf
 #  #%# family=contrib
 
-import os
 import sys
 import warnings
 from secrets.keys import misps
 
 try:
     from pymisp import ExpandedPyMISP
-except ImportError:
+except ImportError as e:
     print("The module 'pymisp' is currently not installed.  You can install it by typing:\n"
-          "sudo pip3 install pymisp\nImportError: No module named pymisp")
+          "sudo pip3 install pymisp\nImportError: No module named pymisp\n")
+    print("Error as e: " + str(e))
     sys.exit(1)
 
 try:
     misp_index = int(sys.argv[0].split('_')[2])
-except IndexError:
+except (IndexError, ValueError) as e:
     print('Something went wrong, the munin script needs to be in the form of: misp_health_0 ; where 0 is index 0 of the misp instance defined in keys.py')
+    print("Error as e: " + str(e))
     sys.exit(1)
 
 if len(sys.argv[0].split('_')) > 3:
@@ -92,9 +93,10 @@ warnings.filterwarnings('ignore', 'apt API not stable yet', FutureWarning)
 def autoconf():
     try:
         from pymisp import ExpandedPyMISP
-    except ImportError:
+    except ImportError as e:
         print("The module 'pymisp' is currently not installed.  You can install it by typing:\n"
           "sudo pip3 install pymisp\nImportError: No module named pymisp")
+        print("Error as e: " + str(e))
         sys.exit(0)
     sys.exit(0)
 
