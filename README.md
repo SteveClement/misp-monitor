@@ -23,9 +23,9 @@ sudo cp munin/misp_health /usr/share/munin/plugins/
 # configure secrets/keys.py for the target misp instance
 sudo cp -r secrets /etc/munin/plugins/
 # Index 0 instance
-sudo ln -s /usr/share/munin/plugins/munin_health /etc/munin/plugins/munin_health_0
+sudo ln -s /usr/share/munin/plugins/misp_health /etc/munin/plugins/munin_health_0
 # Index 1 instance (etc...)
-sudo ln -s /usr/share/munin/plugins/munin_health /etc/munin/plugins/munin_health_1
+sudo ln -s /usr/share/munin/plugins/misp_health /etc/munin/plugins/munin_health_1
 # OpenBSD has the plugins directory somewhere else.
 # doas cp munin/misp_health /usr/local/libexec/munin/plugins/
 ```
