@@ -3,7 +3,7 @@
 #
 # misp_stats
 #
-# Plugin to monitor the health of your MISP instance.
+# Plugin to monitor the statistics of your MISP instance.
 #
 # Author: Steve Clement <steve@localhost.lu>
 #
@@ -44,7 +44,7 @@ except ImportError as e:
 try:
     misp_index = int(sys.argv[0].split('_')[2])
 except (IndexError, ValueError) as e:
-    print('Something went wrong, the munin script needs to be in the form of: misp_health_0 ; where 0 is index 0 of the misp instance defined in keys.py')
+    print('Something went wrong, the munin script needs to be in the form of: misp_stats_0 ; where 0 is index 0 of the misp instance defined in keys.py')
     print("Error as e: " + str(e))
     sys.exit(1)
 
@@ -73,39 +73,17 @@ misp_verifycert = bool(misps[misp_index].split('|')[2])
 ###########################################################
 title = 'Statistics of instance: ' + misp_url
 vlabel = 'Total stats'
-total = 'total'
 
 '''
-Total events: 21
-Total attributes: 4825
-Total users: 2
-Total orgs: 4
-Total correlation: 3
-Total proposals: 0
-
-user_statistics = misp.users_statistics()
-['stats']['event_count']
-['stats']['attribute_count']
-['stats']['correlation_count']
-['stats']['user_count']
-['stats']['org_count']
-['stats']['local_org_count']
 '''
 
-statsAvailable = ['database:ff0000',
-                  'workersCache:22ff22',
-                  'workersDefault:0022ff',
-                  'workersEmail:00aaaa',
-                  'workersPrio:ff00ff',
-                  'workersUpdate:22a64b',
-                  'workersScheduler:abc9cb',
-                  'version:735d46',
-                  'zmq:990ec4',
-                  'gpg:41346d',
-                  'moduleEnrichment:da3fd5',
-                  'moduleExport:bc8fea',
-                  'moduleImport:6f99c7',
-                  'mispLive:c1b5a1']
+statisticsAvailable = ['eventCount:ff0000',
+                  'attribCount:22ff22',
+                  'correlationCount:0022ff',
+                  'userCount:00aaaa',
+                  'orgCount:ff00ff',
+                  'localOrgCount:22a64b',
+                  'proposalCount:abc9cb']
 
 critical = 1
 ###########################################################
@@ -130,24 +108,21 @@ def autoconf():
 
 
 def config():
-    print('graph_category misp')
+    print('graph_category mispStats')
     print('graph_title %s' % (title))
     print('graph_vlabel %s' % (vlabel))
-    for i, diagnostic in enumerate(diagnosticsAvailable):
-        if len(diagnosticsAvailable) > i:
-            print('%s.colour %s' % (diagnostic.split(':')[0], diagnostic.split(':')[1]))
+    for i, stat in enumerate(statsAvailable):
+        if len(statsAvailable) > i:
+            print('%s.colour %s' % (stat.split(':')[0], stat.split(':')[1]))
         if i < critical:
-            print('%s.critical 0:0' % (diagnostic.split(':')[0]))
+            print('%s.critical 0:0' % (stat.split(':')[0]))
         if i == 0:
-            print('%s.draw AREA' % (diagnostic.split(':')[0]))
+            print('%s.draw AREA' % (stat.split(':')[0]))
         else:
-            print('%s.draw STACK' % (diagnostic.split(':')[0]))
-        print('%s.label %s' % (diagnostic.split(':')[0], diagnostic.split(':')[0]))
+            print('%s.draw STACK' % (stat.split(':')[0]))
+        print('%s.label %s' % (stat.split(':')[0], stat.split(':')[0]))
         if i + 1 > critical:
-            print('%s.warning 0:0' % (diagnostic.split(':')[0]))
-    print('total.colour 000000')
-    print('total.draw LINE1')
-    print('total.label %s' % (total))
+            print('%s.warning 0:0' % (stat.split(':')[0]))
     sys.exit(0)
 
 
@@ -164,40 +139,19 @@ if expanded_pymisp is False:
     misp = PyMISP(misp_url, misp_key, misp_verifycert)
 else:
     misp = ExpandedPyMISP(misp_url, misp_key, misp_verifycert)
-result = misp.direct_call(relative_path, body)
 
-diagnostics = {}
-diagnostics['version'] = 0 if result['version']['upToDate'] == "same" else 1
-diagnostics['database'] = 0 if len(result['dbSchemaDiagnostics']['diagnostic']) == 0 else len(result['dbSchemaDiagnostics']['diagnostic'])
-
-diagnostics['gpg'] = 0 if result['gpgStatus'] == "OK" else 1
-diagnostics['zmq'] = 0 if result['zmqStatus'] == 0 else 1
-
-diagnostics['moduleEnrichment'] = 0 if result['moduleStatus']['Enrichment'] == 0 else 1
-diagnostics['moduleImport'] = 0 if result['moduleStatus']['Import'] == 0 else 1
-diagnostics['moduleExport'] = 0 if result['moduleStatus']['Export'] == 0 else 1
-
-diagnostics['workersCache'] = 0 if result['workers']['cache']['ok'] is True else 1
-diagnostics['workersDefault'] = 0 if result['workers']['default']['ok'] is True else 1
-diagnostics['workersEmail'] = 0 if result['workers']['email']['ok'] is True else 1
-diagnostics['workersPrio'] = 0 if result['workers']['prio']['ok'] is True else 1
-diagnostics['workersUpdate'] = 0 if result['workers']['update']['ok'] is True else 1
-diagnostics['workersScheduler'] = 0 if result['workers']['scheduler']['ok'] is True else 1
-diagnostics['mispLive'] = 0 if result['finalSettings'][2]['value'] is True else 1
-diagnostics['redis'] = 0 if result['redisInfo']['connection'] is True else 1
+userStats = misp.users_statistics()
 
 
-# errors = { 'database': 0 }
+statistics = {}
+statistics['eventCount'] = userStats['stats']['event_count']
+statistics['attribCount'] = userStats['stats']['attribute_count']
+statistics['correlationCount'] = userStats['stats']['correlation_count']
+statistics['userCount'] = userStats['stats']['user_count']
+statistics['orgCount'] = userStats['stats']['org_count']
+statistics['localOrgCount'] = userStats['stats']['local_org_count']
+statistics['proposalCount'] = userStats['stats']['proposal_count']
 
-total = 0
-# Looop or similar to populate error foo
-# total += 1
-
-for diagnostic in diagnosticsAvailable:
-    diagnostic = diagnostic.split(':')[0]
-    print('%s.value %s' % (diagnostic, diagnostics[diagnostic]))
-    total += diagnostics[diagnostic]
-#    print('%s.value %s' % (diagnostic, issues.pop(diagnostic, 0)))
-#    print(diagnostic)
-
-print('total.value %s' % (total))
+for statistic in statisticsAvailable:
+    statistic = statistic.split(':')[0]
+    print('%s.value %s' % (statistic, statistics[statistic]))
