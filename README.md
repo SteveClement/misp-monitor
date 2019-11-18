@@ -25,6 +25,7 @@ cp secrets/keys.py.sample secrets/keys.py
 sudo cp munin/misp_health /usr/share/munin/plugins/
 # configure secrets/keys.py for the target misp instance
 sudo cp -r secrets /usr/share/munin/plugins/
+sudo chmod 600 /usr/share/munin/plugins/secrets/keys.py
 # Index 0 instance
 sudo ln -s /usr/share/munin/plugins/misp_health /etc/munin/plugins/misp_health_0
 # Index 1 instance (etc...)
@@ -92,6 +93,8 @@ proposalCount.value 0
 ```
 
 ## Known issues
+
+:warning: The stats module only works on Python 3.6+
 
 ### PyMISP
 

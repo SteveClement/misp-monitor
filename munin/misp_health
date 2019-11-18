@@ -150,7 +150,10 @@ else:
 result = misp.direct_call(relative_path, body)
 
 diagnostics = {}
-diagnostics['version'] = 0 if result['version']['upToDate'] == "same" else 1
+if result['version'] is False:
+    diagnostics['version'] = 1
+else:
+    diagnostics['version'] = 0 if result['version']['upToDate'] == "same" else 1
 
 diagnostics['database'] = 0 if len(result['dbSchemaDiagnostics']['diagnostic']) == 0 else len(result['dbSchemaDiagnostics']['diagnostic'])
 
