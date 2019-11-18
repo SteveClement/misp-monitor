@@ -8,6 +8,7 @@
 # Author: Steve Clement <steve@localhost.lu>
 #
 # v1.0 11-15-2019 - First draft
+# v1.1 11-18-2019 - Enable multiple MISP instances #sloppyVersion
 #
 # Usage: place in /etc/munin/plugins/ (or link it there using ln -s)
 #
@@ -34,18 +35,33 @@ except ImportError:
           "sudo pip3 install pymisp\nImportError: No module named pymisp")
     sys.exit(1)
 
+try:
+    misp_index = int(sys.argv[0].split('_')[2])
+except IndexError:
+    print('Something went wrong, the munin script needs to be in the form of: misp_health_0 ; where 0 is index 0 of the misp instance defined in keys.py')
+    sys.exit(1)
+
+if len(sys.argv[0].split('_')) > 3:
+    print('Something is seriously weird here, we counted too many underscores in the following argv: ' + str(sys.argv[0].split('_')))
+    print('Double check and try again.')
+    sys.exit(1)
+
+if misp_index > len(misps) - 1:
+    print('You seem to try and access a configuration index that does not exist. Bye.')
+    sys.exit(1)
+
 
 relative_path = 'servers/serverSettings/diagnostics'
 
-if len(misps) > 1:
-    # Multiple instances configured
-    misp_url = str(misps[0].split('|')[0])
-    misp_key = str(misps[0].split('|')[1])
-    misp_verifycert = str(misps[0].split('|')[2])
-else:
-    misp_url = str(misps[0].split('|')[0])
-    misp_key = str(misps[0].split('|')[1])
-    misp_verifycert = str(misps[0].split('|')[2])
+body = None
+
+if (misps[misp_index].split('|')[2] != 'True') or (misps[misp_index].split('|')[2] == ''):
+    print('Please verify the value of verifyCert in the keys.py file, it currently seems to be: ' + misps[misp_index].split('|')[2])
+
+misp_url = str(misps[misp_index].split('|')[0])
+misp_key = str(misps[misp_index].split('|')[1])
+misp_verifycert = bool(misps[misp_index].split('|')[2])
+
 
 ###########################################################
 title = 'Health of instance: ' + misp_url
@@ -134,7 +150,7 @@ diagnostics['workersEmail'] = 0 if result['workers']['email']['ok'] is True else
 diagnostics['workersPrio'] = 0 if result['workers']['prio']['ok'] is True else 1
 diagnostics['workersUpdate'] = 0 if result['workers']['update']['ok'] is True else 1
 diagnostics['workersScheduler'] = 0 if result['workers']['scheduler']['ok'] is True else 1
-diagnostics['mispLive'] = 0
+diagnostics['mispLive'] = 0 if result['finalSettings'][2]['value'] is True else 1
 diagnostics['redis'] = 0 if result['redisInfo']['connection'] is True else 1
 
 
