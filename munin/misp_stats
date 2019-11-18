@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# misp_stats
+#
+# Plugin to monitor the health of your MISP instance.
+#
+# Author: Steve Clement <steve@localhost.lu>
+#
+# v1.0 11-15-2019 - First draft
+# v1.1 11-18-2019 - Enable multiple MISP instances #sloppyVersion
+#
+# Usage: place in /etc/munin/plugins/ (or link it there using ln -s)
+#
+# Parameters understood:
+#
+#       config   (required)
+#       autoconf (optional - used by munin-config)
+#
+# Magic markers - optional - used by installation scripts and
+# munin-config:
+#
+#  #%# capabilities=autoconf
+#  #%# family=contrib
+
+import sys
+import warnings
+from secrets.keys import misps
+
+try:
+    from pymisp import ExpandedPyMISP
+    expanded_pymisp = True
+except ImportError as e:
+    expanded_pymisp = False
+
+try:
+    from pymisp import PyMISP  # noqa: E261
+except ImportError as e:
+    print("The module 'pymisp' is currently not installed.  You can install it by typing:\n"
+          "sudo pip3 install pymisp\nImportError: No module named pymisp\n")
+    print("Error as e: " + str(e))
+    sys.exit(1)
+
+try:
+    misp_index = int(sys.argv[0].split('_')[2])
+except (IndexError, ValueError) as e:
+    print('Something went wrong, the munin script needs to be in the form of: misp_health_0 ; where 0 is index 0 of the misp instance defined in keys.py')
+    print("Error as e: " + str(e))
+    sys.exit(1)
+
+if len(sys.argv[0].split('_')) > 3:
+    print('Something is seriously weird here, we counted too many underscores in the following argv: ' + str(sys.argv[0].split('_')))
+    print('Double check and try again.')
+    sys.exit(1)
+
+if misp_index > len(misps) - 1:
+    print('You seem to try and access a configuration index that does not exist. Bye.')
+    sys.exit(1)
+
+
+relative_path = 'servers/serverSettings/diagnostics'
+
+body = None
+
+if (misps[misp_index].split('|')[2] != 'True') or (misps[misp_index].split('|')[2] == ''):
+    print('Please verify the value of verifyCert in the keys.py file, it currently seems to be: ' + misps[misp_index].split('|')[2])
+
+misp_url = str(misps[misp_index].split('|')[0])
+misp_key = str(misps[misp_index].split('|')[1])
+misp_verifycert = bool(misps[misp_index].split('|')[2])
+
+
+###########################################################
+title = 'Statistics of instance: ' + misp_url
+vlabel = 'Total stats'
+total = 'total'
+
+'''
+Total events: 21
+Total attributes: 4825
+Total users: 2
+Total orgs: 4
+Total correlation: 3
+Total proposals: 0
+
+user_statistics = misp.users_statistics()
+['stats']['event_count']
+['stats']['attribute_count']
+['stats']['correlation_count']
+['stats']['user_count']
+['stats']['org_count']
+['stats']['local_org_count']
+'''
+
+statsAvailable = ['database:ff0000',
+                  'workersCache:22ff22',
+                  'workersDefault:0022ff',
+                  'workersEmail:00aaaa',
+                  'workersPrio:ff00ff',
+                  'workersUpdate:22a64b',
+                  'workersScheduler:abc9cb',
+                  'version:735d46',
+                  'zmq:990ec4',
+                  'gpg:41346d',
+                  'moduleEnrichment:da3fd5',
+                  'moduleExport:bc8fea',
+                  'moduleImport:6f99c7',
+                  'mispLive:c1b5a1']
+
+critical = 1
+###########################################################
+
+warnings.filterwarnings('ignore', 'apt API not stable yet', FutureWarning)
+
+
+def autoconf():
+    try:
+        from pymisp import ExpandedPyMISP  # noqa: E261
+    except ImportError as e:
+        pass
+
+    try:
+        from pymisp import PyMISP  # noqa: E261
+    except ImportError as e:
+        print("The module 'pymisp' is currently not installed.  You can install it by typing:\n"
+          "sudo pip3 install pymisp\nImportError: No module named pymisp")
+        print("Error as e: " + str(e))
+        sys.exit(0)
+    sys.exit(0)
+
+
+def config():
+    print('graph_category misp')
+    print('graph_title %s' % (title))
+    print('graph_vlabel %s' % (vlabel))
+    for i, diagnostic in enumerate(diagnosticsAvailable):
+        if len(diagnosticsAvailable) > i:
+            print('%s.colour %s' % (diagnostic.split(':')[0], diagnostic.split(':')[1]))
+        if i < critical:
+            print('%s.critical 0:0' % (diagnostic.split(':')[0]))
+        if i == 0:
+            print('%s.draw AREA' % (diagnostic.split(':')[0]))
+        else:
+            print('%s.draw STACK' % (diagnostic.split(':')[0]))
+        print('%s.label %s' % (diagnostic.split(':')[0], diagnostic.split(':')[0]))
+        if i + 1 > critical:
+            print('%s.warning 0:0' % (diagnostic.split(':')[0]))
+    print('total.colour 000000')
+    print('total.draw LINE1')
+    print('total.label %s' % (total))
+    sys.exit(0)
+
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'autoconf':
+        autoconf()
+    elif sys.argv[1] == 'config':
+        config()
+    elif sys.argv[1]:
+        print('unknown argument "' + sys.argv[1] + '"')
+        sys.exit(1)
+
+if expanded_pymisp is False:
+    misp = PyMISP(misp_url, misp_key, misp_verifycert)
+else:
+    misp = ExpandedPyMISP(misp_url, misp_key, misp_verifycert)
+result = misp.direct_call(relative_path, body)
+
+diagnostics = {}
+diagnostics['version'] = 0 if result['version']['upToDate'] == "same" else 1
+diagnostics['database'] = 0 if len(result['dbSchemaDiagnostics']['diagnostic']) == 0 else len(result['dbSchemaDiagnostics']['diagnostic'])
+
+diagnostics['gpg'] = 0 if result['gpgStatus'] == "OK" else 1
+diagnostics['zmq'] = 0 if result['zmqStatus'] == 0 else 1
+
+diagnostics['moduleEnrichment'] = 0 if result['moduleStatus']['Enrichment'] == 0 else 1
+diagnostics['moduleImport'] = 0 if result['moduleStatus']['Import'] == 0 else 1
+diagnostics['moduleExport'] = 0 if result['moduleStatus']['Export'] == 0 else 1
+
+diagnostics['workersCache'] = 0 if result['workers']['cache']['ok'] is True else 1
+diagnostics['workersDefault'] = 0 if result['workers']['default']['ok'] is True else 1
+diagnostics['workersEmail'] = 0 if result['workers']['email']['ok'] is True else 1
+diagnostics['workersPrio'] = 0 if result['workers']['prio']['ok'] is True else 1
+diagnostics['workersUpdate'] = 0 if result['workers']['update']['ok'] is True else 1
+diagnostics['workersScheduler'] = 0 if result['workers']['scheduler']['ok'] is True else 1
+diagnostics['mispLive'] = 0 if result['finalSettings'][2]['value'] is True else 1
+diagnostics['redis'] = 0 if result['redisInfo']['connection'] is True else 1
+
+
+# errors = { 'database': 0 }
+
+total = 0
+# Looop or similar to populate error foo
+# total += 1
+
+for diagnostic in diagnosticsAvailable:
+    diagnostic = diagnostic.split(':')[0]
+    print('%s.value %s' % (diagnostic, diagnostics[diagnostic]))
+    total += diagnostics[diagnostic]
+#    print('%s.value %s' % (diagnostic, issues.pop(diagnostic, 0)))
+#    print(diagnostic)
+
+print('total.value %s' % (total))
