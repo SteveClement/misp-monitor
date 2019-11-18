@@ -113,7 +113,7 @@ def autoconf():
 
 
 def config():
-    print('graph_category misp')
+    print('graph_category mispHealth')
     print('graph_title %s' % (title))
     print('graph_vlabel %s' % (vlabel))
     for i, diagnostic in enumerate(diagnosticsAvailable):
@@ -151,9 +151,11 @@ result = misp.direct_call(relative_path, body)
 
 diagnostics = {}
 diagnostics['version'] = 0 if result['version']['upToDate'] == "same" else 1
+
 diagnostics['database'] = 0 if len(result['dbSchemaDiagnostics']['diagnostic']) == 0 else len(result['dbSchemaDiagnostics']['diagnostic'])
 
 diagnostics['gpg'] = 0 if result['gpgStatus'] == "OK" else 1
+
 diagnostics['zmq'] = 0 if result['zmqStatus'] == 0 else 1
 
 diagnostics['moduleEnrichment'] = 0 if result['moduleStatus']['Enrichment'] == 0 else 1
@@ -166,7 +168,9 @@ diagnostics['workersEmail'] = 0 if result['workers']['email']['ok'] is True else
 diagnostics['workersPrio'] = 0 if result['workers']['prio']['ok'] is True else 1
 diagnostics['workersUpdate'] = 0 if result['workers']['update']['ok'] is True else 1
 diagnostics['workersScheduler'] = 0 if result['workers']['scheduler']['ok'] is True else 1
+
 diagnostics['mispLive'] = 0 if result['finalSettings'][2]['value'] is True else 1
+
 diagnostics['redis'] = 0 if result['redisInfo']['connection'] is True else 1
 
 
