@@ -113,7 +113,7 @@ def autoconf():
 
 
 def config():
-    print('graph_category mispHealth')
+    print('graph_category misphealth')
     print('graph_title %s' % (title))
     print('graph_vlabel %s' % (vlabel))
     for i, diagnostic in enumerate(diagnosticsAvailable):

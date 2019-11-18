@@ -74,16 +74,13 @@ misp_verifycert = bool(misps[misp_index].split('|')[2])
 title = 'Statistics of instance: ' + misp_url
 vlabel = 'Total stats'
 
-'''
-'''
-
 statisticsAvailable = ['eventCount:ff0000',
-                  'attribCount:22ff22',
-                  'correlationCount:0022ff',
-                  'userCount:00aaaa',
-                  'orgCount:ff00ff',
-                  'localOrgCount:22a64b',
-                  'proposalCount:abc9cb']
+                       'attribCount:22ff22',
+                       'correlationCount:0022ff',
+                       'userCount:00aaaa',
+                       'orgCount:ff00ff',
+                       'localOrgCount:22a64b',
+                       'proposalCount:abc9cb']
 
 critical = 1
 ###########################################################
@@ -108,11 +105,11 @@ def autoconf():
 
 
 def config():
-    print('graph_category mispStats')
+    print('graph_category mispstats')
     print('graph_title %s' % (title))
     print('graph_vlabel %s' % (vlabel))
-    for i, stat in enumerate(statsAvailable):
-        if len(statsAvailable) > i:
+    for i, stat in enumerate(statisticsAvailable):
+        if len(statisticsAvailable) > i:
             print('%s.colour %s' % (stat.split(':')[0], stat.split(':')[1]))
         if i < critical:
             print('%s.critical 0:0' % (stat.split(':')[0]))
