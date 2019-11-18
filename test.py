@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from secrets.keys import misp_url, misp_key, misp_verifycert, misp_client_cert
+from secrets.keys import misps
 
 from pymisp import ExpandedPyMISP
 import json
@@ -10,7 +10,8 @@ relative_path = 'servers/serverSettings/diagnostics'
 
 body = None
 
-misp = ExpandedPyMISP(misp_url, misp_key, misp_verifycert)
+misp = ExpandedPyMISP(misps[0].split('|')[0], misps[0].split('|')[1], misps[0].split('|')[2])
+
 result=misp.direct_call(relative_path, body)
 
 print(result['version']['upToDate'])
