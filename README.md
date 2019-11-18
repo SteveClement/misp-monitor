@@ -21,7 +21,7 @@ cp secrets/keys.py.sample secrets/keys.py
 ```
 sudo cp munin/misp_health /usr/share/munin/plugins/
 # configure secrets/keys.py for the target misp instance
-sudo cp -r secrets /etc/munin/plugins/
+sudo cp -r secrets /usr/share/munin/plugins/
 # Index 0 instance
 sudo ln -s /usr/share/munin/plugins/misp_health /etc/munin/plugins/munin_health_0
 # Index 1 instance (etc...)
