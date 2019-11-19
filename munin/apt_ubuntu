@@ -135,7 +135,7 @@ for pkg in apt.Cache():
         pkgs[a] = pkgs.get(a, 0) + 1
         total += 1
 
-reboot = 1 if os.path.exists('/var/run/reboot-required') else 0
+reboot = 10 if os.path.exists('/var/run/reboot-required') else 0
 
 for archive in archives + [other]:
     print('%s.value %s' % (archive, pkgs.pop(archive, 0)))
