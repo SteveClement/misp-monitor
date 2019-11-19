@@ -32,6 +32,7 @@ import warnings
 title = 'Upgradable packages'  # 'Upgradeable packages'
 vlabel = 'Total packages'
 other = 'other'
+reboot = 'reboot'
 total = 'total'
 
 archives = ['security', 'updates', 'proposed', 'backports']
@@ -89,6 +90,9 @@ def config():
         print('%s.label %s' % (archive, archive))
         if i + 1 > critical:
             print('%s.warning 0:0' % (archive))
+    print('reboot.colour ff0000')
+    print('reboot.draw LINE1')
+    print('reboot.label %s' % (reboot))
     print('total.colour 000000')
     print('total.draw LINE1')
     print('total.label %s' % (total))
@@ -131,7 +135,10 @@ for pkg in apt.Cache():
         pkgs[a] = pkgs.get(a, 0) + 1
         total += 1
 
+reboot = 1 if os.path.exists('/var/run/reboot-required') else 0
+
 for archive in archives + [other]:
     print('%s.value %s' % (archive, pkgs.pop(archive, 0)))
 
+print('reboot.value %s' % (reboot))
 print('total.value %s' % (total))
