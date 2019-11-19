@@ -91,7 +91,7 @@ def config():
         if i + 1 > critical:
             print('%s.warning 0:0' % (archive))
     print('reboot.colour ff0000')
-    print('reboot.draw LINE1')
+    print('reboot.draw AREA')
     print('reboot.label %s' % (reboot))
     print('total.colour 000000')
     print('total.draw LINE1')
