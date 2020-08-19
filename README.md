@@ -2,6 +2,11 @@
 
 Various bits and pieces to monitor a MISP instance
 
+## OpenNMS
+
+For [OpenNMS](https://www.opennms.com/) instructions [click here](https://www.misp-project.org/2020/08/18/MISP-Monitoring-with-OpenNMS.html).
+
+
 ## Create a sync user
 
 To make sure to not lose your data, make sure to create a [sync user](https://www.circl.lu/doc/misp/GLOSSARY.html#sync-user)
